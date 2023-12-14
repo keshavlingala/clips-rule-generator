@@ -1,3 +1,4 @@
+#!/usr/local/bin/python3.10
 import clips
 
 class Applicant:
@@ -82,16 +83,22 @@ with open('stackoverflow_full.csv','r') as f:
 
 print('Dataset Loaded!')
 
-def generate_defrule(country,edlevel,gender,mainbranch,accessibility,yearscode,yearscodepro,skills):
+def getResults(rule):
+    env.build(rule)
+    env.run()
+    results= [fact for fact in env.facts() if fact.template.name=='result']
+    if 'member$' not in rule:
+        for fact in results:
+            fact.retract()
+    return results
+
+def generate_defrule(country,edlevel,mainbranch,accessibility,yearscode,yearscodepro,skills):
     rule_gen='(defrule filter-rule-generated (applicant (id ?id) \n'
     if country!='':
         rule_gen+=f'(country "{country}") \n'
     if edlevel!='':
         rule_gen+=f'(edlevel "{edlevel}") \n'
 
-    if gender!='':
-        rule_gen+= f'(gender "{gender}") \n'
-    
     if mainbranch!='':
         rule_gen+= f'(mainbranch "{mainbranch}") \n'
     
@@ -111,6 +118,10 @@ def generate_defrule(country,edlevel,gender,mainbranch,accessibility,yearscode,y
             rule_gen+= f'(test (member$ "{skill}" $?skills)) \n'
 
     rule_gen+='=> (assert (result ?id)))'
+    with open('generated_rules.clp','a+') as f:
+        f.write('\n')
+        f.write(rule_gen)
+        f.write('\n')
     return rule_gen
 
 while True:
@@ -118,26 +129,51 @@ while True:
     print('----------------------------------------------------------')
 
     country=input('Enter Country:')
+    intermediateResult=getResults(generate_defrule(country,'','','','','',''))
+    print('Number of Applicants in the given country:',len(intermediateResult))
+    if intermediateResult==[]:
+        print('No Applicants found in the given country')
+        continue
     edlevel=input('Enter Education Level(Master/Undergraduate/PhD/NoHigherEd/Other):')
-    gender = input('Enter Gender (Man/Woman/NonBinary): ')
+    intermediateResult=getResults(generate_defrule(country,edlevel,'','','','',''))
+    print('Number of Applicants in the given Education Level:',len(intermediateResult))
+    if intermediateResult==[]:
+        print('No Applicants found in the given Education Level')
+        continue
     mainbranch = input('Enter Main Branch of Expertise (Dev/NotDev): ')
+    intermediateResult=getResults(generate_defrule(country,edlevel,mainbranch,'','','',''))
+    print('Number of Applicants in the given Main Branch of Expertise:',len(intermediateResult))
+    if intermediateResult==[]:
+        print('No Applicants found in the given Main Branch of Expertise')
+        continue
     accessibility = input('Enter Accessibility (Yes/No): ')
+    intermediateResult=getResults(generate_defrule(country,edlevel,mainbranch,accessibility,'','',''))
+    print('Number of Applicants in the given Accessibility:',len(intermediateResult))
+    if intermediateResult==[]:
+        print('No Applicants found in the given Accessibility')
+        continue
     yearscode = input('Enter Years of Coding: ')
+    intermediateResult=getResults(generate_defrule(country,edlevel,mainbranch,accessibility,yearscode,'',''))
+    print('Number of Applicants in the given Years of Coding:',len(intermediateResult))
+    if intermediateResult==[]:
+        print('No Applicants found in the given Years of Coding')
+        continue
     yearscodepro = input('Enter Years of Professional Coding: ')
+    intermediateResult=getResults(generate_defrule(country,edlevel,mainbranch,accessibility,yearscode,yearscodepro,''))
+    print('Number of Applicants in the given Years of Professional Coding:',len(intermediateResult))
+    if intermediateResult==[]:
+        print('No Applicants found in the given Years of Professional Coding')
+        continue
     skills = input('Enter Skills (separated by space): ').split(' ')
+    intermediateResult=getResults(generate_defrule(country,edlevel,mainbranch,accessibility,yearscode,yearscodepro,skills))
+    print('Number of Applicants in the given Skills:',len(intermediateResult))
+    if intermediateResult==[]:
+        print('No Applicants found in the given Skills')
+        continue
     print('----------------------------------------------------------')
-    rule=generate_defrule(country,edlevel,gender,mainbranch,accessibility,yearscode,yearscodepro,skills)
-    env.build(rule)
-
-    env.run()
-
     print('-'*50)
-    print('Generated Rule for the Query:')
-    print(rule)
-    print('-'*50)
-    results= [fact for fact in env.facts() if fact.template.name=='result']
-    print('Number of Results:',len(results))
-    for fact in results:
+    print(intermediateResult)
+    for fact in intermediateResult:
         print('----------------------------------------------------------')
         print(all_applicants[str(fact[0])])
         print('----------------------------------------------------------')
@@ -145,3 +181,4 @@ while True:
     print('Do you want to continue? (y/n)')
     if input()=='n':
         break
+

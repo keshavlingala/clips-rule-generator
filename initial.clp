@@ -35,3 +35,17 @@
    =>
    (printout t "User: " ?name " with " ?exp " years of experience has skills: " y " and " z "." crlf))
 
+
+
+(defrule filter-rule-generated (applicant (id ?id) 
+(country "India") 
+(edlevel "Master") 
+(gender "Man") 
+(mainbranch "Dev") 
+(accessibility "No") 
+(yearscode ?yc) (yearscodepro ?ycp) (skills $?skills))
+(test (>= ?yc 15)) 
+(test (>= ?ycp 10)) 
+(test (member$ "Java" $?skills)) 
+(test (member$ "Python" $?skills)) 
+=> (assert (result ?id)))
